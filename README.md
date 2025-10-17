@@ -1,1 +1,1 @@
-# long-tail-imbalance-handling
+# Long-Tail-Imbalance-Handling
