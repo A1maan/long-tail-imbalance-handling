@@ -1,0 +1,153 @@
+{
+  "YOLOv8s": {
+    "primary_metrics": {
+      "model_name": "YOLOv8s",
+      "mAP@0.5": 0.524712401523375,
+      "mAP@0.75": 0.4322636365015454,
+      "mAP@[0.5:0.95]": 0.39600744843942104,
+      "precision": 0.19749540745845862,
+      "recall": 0.4597482847246592,
+      "head_classes_AP": null,
+      "tail_classes_AP": null,
+      "medium_classes_AP": null,
+      "model_type": "YOLO-based",
+      "num_images": 5000,
+      "total_detections": 31894,
+      "avg_detections_per_image": 6.3788,
+      "confidence_threshold": 0.25,
+      "inference_time_ms": 58.18909173831344,
+      "device": "cuda",
+      "timestamp": "2025-10-18T17:43:29.097088"
+    },
+    "class_wise": {},
+    "head_classes": [],
+    "medium_classes": [],
+    "tail_classes": []
+  },
+  "YOLO11s": {
+    "primary_metrics": {
+      "model_name": "YOLO11s",
+      "mAP@0.5": 0.5333722538851016,
+      "mAP@0.75": 0.44273523516316976,
+      "mAP@[0.5:0.95]": 0.40552705658052207,
+      "precision": 0.20100821050160786,
+      "recall": 0.4642426190562665,
+      "head_classes_AP": null,
+      "tail_classes_AP": null,
+      "medium_classes_AP": null,
+      "model_type": "YOLO-based",
+      "num_images": 5000,
+      "total_detections": 30515,
+      "avg_detections_per_image": 6.103,
+      "confidence_threshold": 0.25,
+      "inference_time_ms": 26.10626630485058,
+      "device": "cuda",
+      "timestamp": "2025-10-18T17:44:25.470347"
+    },
+    "class_wise": {},
+    "head_classes": [],
+    "medium_classes": [],
+    "tail_classes": []
+  },
+  "YOLO12s": {
+    "primary_metrics": {
+      "model_name": "YOLO12s",
+      "mAP@0.5": 0.533157629627339,
+      "mAP@0.75": 0.4469275118089997,
+      "mAP@[0.5:0.95]": 0.40942572334434774,
+      "precision": 0.20362701550942522,
+      "recall": 0.46517471825318457,
+      "head_classes_AP": null,
+      "tail_classes_AP": null,
+      "medium_classes_AP": null,
+      "model_type": "YOLO-based",
+      "num_images": 5000,
+      "total_detections": 28621,
+      "avg_detections_per_image": 5.7242,
+      "confidence_threshold": 0.25,
+      "inference_time_ms": 17.726702615618706,
+      "device": "cuda",
+      "timestamp": "2025-10-18T17:45:36.764327"
+    },
+    "class_wise": {},
+    "head_classes": [],
+    "medium_classes": [],
+    "tail_classes": []
+  },
+  "RT-DETR-L": {
+    "primary_metrics": {
+      "model_name": "RT-DETR-L",
+      "mAP@0.5": 0.6789682337124145,
+      "mAP@0.75": 0.5485728204356028,
+      "mAP@[0.5:0.95]": 0.5059860677668816,
+      "precision": 0.3130809289104661,
+      "recall": 0.6044875577077455,
+      "head_classes_AP": null,
+      "tail_classes_AP": null,
+      "medium_classes_AP": null,
+      "model_type": "YOLO-based",
+      "num_images": 5000,
+      "total_detections": 65035,
+      "avg_detections_per_image": 13.007,
+      "confidence_threshold": 0.25,
+      "inference_time_ms": 25.857039727270603,
+      "device": "cuda",
+      "timestamp": "2025-10-18T17:48:23.624538"
+    },
+    "class_wise": {},
+    "head_classes": [],
+    "medium_classes": [],
+    "tail_classes": []
+  },
+  "Faster R-CNN": {
+    "primary_metrics": {
+      "model_name": "Faster R-CNN",
+      "mAP@0.5": 0.5323226260675913,
+      "mAP@0.75": 0.37839380676315776,
+      "mAP@[0.5:0.95]": 0.34406335533153254,
+      "precision": 0.18333752554086508,
+      "recall": 0.42188154249351995,
+      "head_classes_AP": null,
+      "tail_classes_AP": null,
+      "medium_classes_AP": null
+    },
+    "class_wise": {},
+    "head_classes": [],
+    "medium_classes": [],
+    "tail_classes": []
+  },
+  "Mask R-CNN": {
+    "primary_metrics": {
+      "model_name": "Mask R-CNN",
+      "mAP@0.5": 0.5401721501622848,
+      "mAP@0.75": 0.38980192562949434,
+      "mAP@[0.5:0.95]": 0.35365271308062685,
+      "precision": 0.1878749497593937,
+      "recall": 0.43323172446403313,
+      "head_classes_AP": null,
+      "tail_classes_AP": null,
+      "medium_classes_AP": null
+    },
+    "class_wise": {},
+    "head_classes": [],
+    "medium_classes": [],
+    "tail_classes": []
+  },
+  "RetinaNet": {
+    "primary_metrics": {
+      "model_name": "RetinaNet",
+      "mAP@0.5": 0.42282679860078176,
+      "mAP@0.75": 0.32557517448102985,
+      "mAP@[0.5:0.95]": 0.2968077786681319,
+      "precision": 0.11885241107368742,
+      "recall": 0.3394211701964453,
+      "head_classes_AP": null,
+      "tail_classes_AP": null,
+      "medium_classes_AP": null
+    },
+    "class_wise": {},
+    "head_classes": [],
+    "medium_classes": [],
+    "tail_classes": []
+  }
+}

@@ -1,0 +1,65 @@
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+*.sqlite3
+.env
+*.egg-info/
+dist/
+build/
+
+# Virtual Environments
+venv/
+env/
+ENV/
+.venv/
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# Data & Models (Large files - don't commit!)
+data/
+model/
+weights/
+*.pt
+*.pth
+*.onnx
+*.weights
+checkpoint*/
+checkpoints/
+
+# Dataset directories
+coco/
+val2017/
+train2017/
+images/
+annotations/
+labels/
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+tmp/
+temp/
+
+# OS
+.DS_Store
+Thumbs.db
+*.log
+
+# Cache files
+*.cache
+.pytest_cache/
+.coverage
+
