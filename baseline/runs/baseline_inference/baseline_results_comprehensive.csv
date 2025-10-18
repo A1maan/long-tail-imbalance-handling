@@ -1,1 +1,0 @@
-Model,Type,mAP@0.5,mAP@0.75,mAP@[0.5:0.95],Precision,Recall,Num_Images,Avg_Detections,Inference_Time_ms,Device
