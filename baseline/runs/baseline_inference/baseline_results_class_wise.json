@@ -1,0 +1,136 @@
+{
+  "YOLOv8s": {
+    "primary_metrics": {
+      "model_name": "YOLOv8s",
+      "mAP@0.5": 0.524712401523375,
+      "mAP@0.75": 0.4322636365015454,
+      "mAP@[0.5:0.95]": 0.39600744843942104,
+      "precision": 0.19749540745845862,
+      "recall": 0.4597482847246592,
+      "head_classes_AP": null,
+      "tail_classes_AP": null,
+      "medium_classes_AP": null,
+      "model_type": "YOLO-based",
+      "num_images": 5000,
+      "total_detections": 31894,
+      "avg_detections_per_image": 6.3788,
+      "confidence_threshold": 0.25,
+      "inference_time_ms": 56.234695948660374,
+      "device": "cuda",
+      "timestamp": "2025-10-19T18:32:06.965510"
+    },
+    "class_wise": {},
+    "head_classes": [],
+    "medium_classes": [],
+    "tail_classes": []
+  },
+  "YOLO11s": {
+    "primary_metrics": {
+      "model_name": "YOLO11s",
+      "mAP@0.5": 0.5333722538851016,
+      "mAP@0.75": 0.44273523516316976,
+      "mAP@[0.5:0.95]": 0.40552705658052207,
+      "precision": 0.20100821050160786,
+      "recall": 0.4642426190562665,
+      "head_classes_AP": null,
+      "tail_classes_AP": null,
+      "medium_classes_AP": null,
+      "model_type": "YOLO-based",
+      "num_images": 5000,
+      "total_detections": 30515,
+      "avg_detections_per_image": 6.103,
+      "confidence_threshold": 0.25,
+      "inference_time_ms": 26.283000595867634,
+      "device": "cuda",
+      "timestamp": "2025-10-19T18:33:02.037598"
+    },
+    "class_wise": {},
+    "head_classes": [],
+    "medium_classes": [],
+    "tail_classes": []
+  },
+  "YOLO12s": {
+    "primary_metrics": {
+      "model_name": "YOLO12s",
+      "mAP@0.5": 0.533157629627339,
+      "mAP@0.75": 0.4469275118089997,
+      "mAP@[0.5:0.95]": 0.40942572334434774,
+      "precision": 0.20362701550942522,
+      "recall": 0.46517471825318457,
+      "head_classes_AP": null,
+      "tail_classes_AP": null,
+      "medium_classes_AP": null,
+      "model_type": "YOLO-based",
+      "num_images": 5000,
+      "total_detections": 28621,
+      "avg_detections_per_image": 5.7242,
+      "confidence_threshold": 0.25,
+      "inference_time_ms": 17.947318963706493,
+      "device": "cuda",
+      "timestamp": "2025-10-19T18:34:11.545674"
+    },
+    "class_wise": {},
+    "head_classes": [],
+    "medium_classes": [],
+    "tail_classes": []
+  },
+  "RT-DETR-L": {
+    "primary_metrics": {
+      "model_name": "RT-DETR-L",
+      "mAP@0.5": 0.6789682337124145,
+      "mAP@0.75": 0.5485728204356028,
+      "mAP@[0.5:0.95]": 0.5059860677668816,
+      "precision": 0.3130809289104661,
+      "recall": 0.6044875577077455,
+      "head_classes_AP": null,
+      "tail_classes_AP": null,
+      "medium_classes_AP": null,
+      "model_type": "YOLO-based",
+      "num_images": 5000,
+      "total_detections": 65035,
+      "avg_detections_per_image": 13.007,
+      "confidence_threshold": 0.25,
+      "inference_time_ms": 25.71309870108962,
+      "device": "cuda",
+      "timestamp": "2025-10-19T18:36:54.954107"
+    },
+    "class_wise": {},
+    "head_classes": [],
+    "medium_classes": [],
+    "tail_classes": []
+  },
+  "Faster R-CNN": {
+    "primary_metrics": {
+      "model_name": "Faster R-CNN",
+      "mAP@0.5": 0.6260285223268497,
+      "mAP@0.75": 0.4878854613412189,
+      "mAP@[0.5:0.95]": 0.44125297033106947,
+      "precision": 0.2651616066638115,
+      "recall": 0.5260361011005208,
+      "head_classes_AP": null,
+      "tail_classes_AP": null,
+      "medium_classes_AP": null
+    },
+    "class_wise": {},
+    "head_classes": [],
+    "medium_classes": [],
+    "tail_classes": []
+  },
+  "RetinaNet": {
+    "primary_metrics": {
+      "model_name": "RetinaNet",
+      "mAP@0.5": 0.4595661623683464,
+      "mAP@0.75": 0.36523114204397816,
+      "mAP@[0.5:0.95]": 0.3325194766584853,
+      "precision": 0.15156857712711003,
+      "recall": 0.3748651077086571,
+      "head_classes_AP": null,
+      "tail_classes_AP": null,
+      "medium_classes_AP": null
+    },
+    "class_wise": {},
+    "head_classes": [],
+    "medium_classes": [],
+    "tail_classes": []
+  }
+}

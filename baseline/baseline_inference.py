@@ -319,16 +319,12 @@ class BaselineInferenceRunner:
         try:
             # Load model
             if model_type == "faster_rcnn":
-                model = torchvision.models.detection.fasterrcnn_resnet50_fpn(pretrained=False)
-                weights_path = os.path.join(self.model_dir, "faster_rcnn_resnet50_fpn.pt")
-                
-            elif model_type == "mask_rcnn":
-                model = torchvision.models.detection.maskrcnn_resnet50_fpn(pretrained=False)
-                weights_path = os.path.join(self.model_dir, "mask_rcnn_resnet50_fpn.pt")
+                model = torchvision.models.detection.fasterrcnn_resnet50_fpn_v2(pretrained=False)
+                weights_path = os.path.join(self.model_dir, "faster_rcnn_resnet50_fpn_v2.pt")
                 
             elif model_type == "retinanet":
-                model = torchvision.models.detection.retinanet_resnet50_fpn(pretrained=False)
-                weights_path = os.path.join(self.model_dir, "retinanet_resnet50_fpn.pt")
+                model = torchvision.models.detection.retinanet_resnet50_fpn_v2(pretrained=False)
+                weights_path = os.path.join(self.model_dir, "retinanet_resnet50_fpn_v2.pt")
             
             # Load weights
             if os.path.exists(weights_path):
@@ -499,9 +495,8 @@ class BaselineInferenceRunner:
         print(f"{'*'*60}")
         
         torchvision_models = [
-            ("faster_rcnn_resnet50_fpn.pt", "Faster R-CNN", "faster_rcnn"),
-            ("mask_rcnn_resnet50_fpn.pt", "Mask R-CNN", "mask_rcnn"),
-            ("retinanet_resnet50_fpn.pt", "RetinaNet", "retinanet"),
+            ("faster_rcnn_resnet50_fpn_v2.pt", "Faster R-CNN", "faster_rcnn"),
+            ("retinanet_resnet50_fpn_v2.pt", "RetinaNet", "retinanet"),
         ]
         
         for model_file, model_name, model_type in torchvision_models:
