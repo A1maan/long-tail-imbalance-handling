@@ -1,3 +1,9 @@
+"""
+Focal Loss and Varifocal Loss Implementations for Object Detection
+- Focal Loss: https://arxiv.org/abs/1708.02002
+- Varifocal Loss: https://arxiv.org/abs/2008.13367
+"""
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -5,64 +11,37 @@ import torch.nn.functional as F
 
 class FocalLoss(nn.Module):
     """
-    Focal Loss implementation for handling class imbalance.
-    
-    Focal Loss = -alpha_t * (1 - p_t)^gamma * log(p_t)
-    
-    Args:
-        alpha: Weighting factor in range (0,1) to balance positive vs negative examples
-               or a list of weights for each class. Default: 0.25
-        gamma: Exponent of the modulating factor (1 - p_t)^gamma to balance easy vs hard examples.
-               Default: 2.0
+    Wraps focal loss around existing loss_fcn(), i.e. criteria = FocalLoss(nn.BCEWithLogitsLoss(), gamma=1.5).
+
+    Implements the Focal Loss function for addressing class imbalance by down-weighting easy examples and focusing
+    on hard negatives during training.
+
+    Attributes:
+        gamma (float): The focusing parameter that controls how much the loss focuses on hard-to-classify examples.
+        alpha (torch.Tensor): The balancing factor used to address class imbalance.
     """
-    
-    def __init__(self, alpha=0.25, gamma=2.0):
-        super(FocalLoss, self).__init__()
-        self.alpha = alpha
-        self.gamma = gamma
-        self.ce_loss = nn.CrossEntropyLoss(reduction='none')
-        
-    def forward(self, inputs, targets):
-        """
-        Args:
-            inputs: (N, C) where N = batch size, C = number of classes
-            targets: (N) where each value is 0 <= targets[i] <= C-1
-        
-        Returns:
-            Focal loss value (scalar)
-        """
-        ce_loss = self.ce_loss(inputs, targets)
-        
-        # Get softmax probabilities
-        p = torch.exp(-ce_loss)
-        
-        # Apply focal term: (1 - p_t)^gamma
-        focal_weight = (1 - p) ** self.gamma
-        
-        # Apply alpha weighting
-        alpha_weight = self.alpha if self.alpha >= 0 else 1.0
-        
-        # Compute focal loss
-        focal_loss = alpha_weight * focal_weight * ce_loss
-        
-        return focal_loss.mean()
 
+    def __init__(self, gamma: float = 1.5, alpha: float | None = 0.25):
+        super().__init__()
+        self.gamma = float(gamma)
+        # store alpha as float or None; don't mutate module attr inside forward
+        self.alpha = None if alpha is None else float(alpha)
 
-# Testing code
+    def forward(self, pred: torch.Tensor, label: torch.Tensor) -> torch.Tensor:
+        # BCE term, unreduced
+        bce = F.binary_cross_entropy_with_logits(pred, label, reduction="none")
 
-if __name__ == "__main__":
-    # Example usage
-    batch_size = 32
-    num_classes = 10
-    
-    # Create sample inputs and targets
-    inputs = torch.randn(batch_size, num_classes)
-    targets = torch.randint(0, num_classes, (batch_size,))
-    
-    # Initialize loss function
-    loss_fn = FocalLoss(alpha=0.25, gamma=2.0)
-    
-    # Compute loss
-    loss = loss_fn(inputs, targets)
-    
-    print(f"Focal Loss: {loss.item():.4f}")
+        # focal modulating factor
+        prob = pred.sigmoid()
+        p_t = label * prob + (1.0 - label) * (1.0 - prob)          # [B, A, C]
+        modulating = (1.0 - p_t).pow(self.gamma)                    # [B, A, C]
+        loss = bce * modulating
+
+        # alpha balancing (optional)
+        if self.alpha is not None:
+            # broadcast scalar alpha to tensor on the right device/dtype
+            alpha_t = label.new_tensor(self.alpha)
+            alpha_t = label * alpha_t + (1.0 - label) * (1.0 - alpha_t)
+            loss = alpha_t * loss                                    # [B, A, C]
+
+        return loss

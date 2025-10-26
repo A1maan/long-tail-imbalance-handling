@@ -1,158 +1,208 @@
 """
-Training script for YOLO models with custom Focal Loss
-Integrates custom Focal Loss with Ultralytics YOLO for handling class imbalance
+Training script for YOLO and RT-DETR models with Focal Loss
+Integrates Ultralytics' built-in Focal Loss for handling class imbalance
+
+Supported Models:
+- YOLOv8 (all sizes: n, s, m, l, x)
+- YOLOv11 (all sizes)  
+- YOLOv12 (all sizes)
+- RT-DETR (all sizes: l, x)
+
+Features:
+- Focal Loss (from Ultralytics) for class imbalance (gamma=2.0, alpha=0.25)
+- Gradient-based attribution for saliency analysis
+- Multi-GPU distributed training
+- Automatic model architecture detection
 """
 
 import torch
-import torch.nn as nn
 from ultralytics import YOLO
-from ultralytics.models.yolo.detect import DetectionTrainer
-from ultralytics.nn.tasks import DetectionModel
 from pathlib import Path
 import sys
 import os
 
-# Add loss functions directory to path
-loss_functions_dir = Path(__file__).parent
-sys.path.insert(0, str(loss_functions_dir))
+script_dir = os.path.dirname(os.path.abspath(__file__))
+current_pythonpath = os.environ.get('PYTHONPATH', '')
+if script_dir not in current_pythonpath:
+    os.environ['PYTHONPATH'] = f"{script_dir}:{current_pythonpath}" if current_pythonpath else script_dir
+    print(f"[INFO] Set PYTHONPATH to: {os.environ['PYTHONPATH']}")
 
-from FocalLoss import FocalLoss
+# Add to sys.path for current process too
+if script_dir not in sys.path:
+    sys.path.insert(0, script_dir)
 
+from custom_trainer import CustomDetectionTrainer
 
-class CustomDetectionModel(DetectionModel):
+def print_model_loss_info(model):
     """
-    Custom YOLO Detection Model with Focal Loss
-    Overrides the standard loss function with Focal Loss for imbalance handling
-    """
+    Print detailed information about the model's loss function
+    Works with both YOLO and RT-DETR models
     
-    def __init__(self, cfg="yolov8s.yaml", ch=3, nc=None, verbose=True):
-        """
-        Initialize custom detection model
+    Args:
+        model: YOLO or RT-DETR model object
+    """
+    print(f"\n{'='*60}")
+    print(f"Model Loss Function Information")
+    print(f"{'='*60}")
+    
+    # Access the underlying model
+    if hasattr(model, 'model'):
+        yolo_model = model.model
+        print(f"Model type: {type(yolo_model).__name__}")
+        print(f"Model class: {yolo_model.__class__.__name__}")
         
-        Args:
-            cfg: Model config file
-            ch: Input channels
-            nc: Number of classes
-            verbose: Verbosity flag
-        """
-        super().__init__(cfg, ch, nc, verbose)
-        self.focal_loss_fn = FocalLoss(alpha=0.25, gamma=2.0)
-    
-    def init_criterion(self):
-        """
-        Initialize the loss function - OVERRIDDEN to use Focal Loss
-        """
-        # Replace standard criterion with Focal Loss
-        self.criterion = self.focal_loss_fn
-        print("[INFO] Initialized Focal Loss as criterion")
-
-
-class CustomDetectionTrainer(DetectionTrainer):
-    """
-    Custom Detection Trainer that uses Focal Loss
-    Extends DetectionTrainer to implement custom loss function
-    """
-    
-    def get_model(self, cfg, weights):
-        """
-        Returns a customized detection model with Focal Loss
-        
-        Args:
-            cfg: Model config
-            weights: Pre-trained weights
+        # Check for criterion
+        if hasattr(yolo_model, 'criterion'):
+            criterion = yolo_model.criterion
+            criterion_name = type(criterion).__name__
+            print(f"✓ Criterion found: {criterion_name}")
             
-        Returns:
-            CustomDetectionModel instance
-        """
-        model = CustomDetectionModel(cfg=cfg, nc=self.data["nc"], verbose=False)
-        if weights:
-            model.load(weights)
-        return model
+            # Check if this is an RT-DETR model (uses DETRLoss/RTDETRDetectionLoss)
+            if 'DETR' in criterion_name or 'RTDETR' in criterion_name:
+                print(f"  Model Type: RT-DETR (Transformer-based)")
+                print(f"  Loss Type: {criterion_name}")
+                
+                # Check for focal loss components
+                if hasattr(criterion, 'vfl') and criterion.vfl is not None:
+                    vfl_type = type(criterion.vfl).__name__
+                    print(f"  Classification Loss (vfl): {vfl_type}")
+                    if hasattr(criterion.vfl, 'gamma'):
+                        print(f"    - Gamma: {criterion.vfl.gamma}")
+                    if hasattr(criterion.vfl, 'alpha'):
+                        print(f"    - Alpha: {criterion.vfl.alpha}")
+                elif hasattr(criterion, 'fl') and criterion.fl is not None:
+                    fl_type = type(criterion.fl).__name__
+                    print(f"  Classification Loss (fl): {fl_type}")
+                    if 'FocalLoss' in fl_type:
+                        print(f"    ✓ Using FOCAL LOSS!")
+                        if hasattr(criterion.fl, 'gamma'):
+                            print(f"      - Gamma: {criterion.fl.gamma}")
+                        if hasattr(criterion.fl, 'alpha'):
+                            alpha_val = criterion.fl.alpha
+                            print(f"      - Alpha: {alpha_val}")
+                else:
+                    print(f"  ⚠ No focal/varifocal loss component found")
+                    
+            else:
+                # Standard YOLO model
+                print(f"  Model Type: YOLO (Anchor-free CNN)")
+                
+                # Check bce component (the classification loss)
+                if hasattr(criterion, 'bce'):
+                    bce_type = type(criterion.bce).__name__
+                    print(f"  Classification Loss (bce): {bce_type}")
+                    
+                    if 'FocalLoss' in bce_type or 'Focal' in bce_type:
+                        print(f"    ✓ Using FOCAL LOSS!")
+                        if hasattr(criterion.bce, 'alpha'):
+                            alpha_val = criterion.bce.alpha
+                            print(f"      - Alpha: {alpha_val}")
+                        if hasattr(criterion.bce, 'gamma'):
+                            print(f"      - Gamma: {criterion.bce.gamma}")
+                    else:
+                        print(f"    ⚠ Using standard {bce_type} (Focal Loss NOT applied)")
+                else:
+                    print(f"  ⚠ No 'bce' attribute found in criterion")
+        else:
+            print(f"✗ No criterion attribute found")
+        
+        # Print model structure summary
+        print(f"\nModel structure:")
+        total_params = sum(p.numel() for p in yolo_model.parameters())
+        trainable_params = sum(p.numel() for p in yolo_model.parameters() if p.requires_grad)
+        print(f"  - Total parameters: {total_params:,}")
+        print(f"  - Trainable parameters: {trainable_params:,}")
+        
+        # Print detection head info
+        if hasattr(yolo_model, 'model') and len(yolo_model.model) > 0:
+            detect_head = yolo_model.model[-1]
+            head_type = detect_head.__class__.__name__
+            print(f"  - Detection head: {head_type}")
+            
+            if 'RTDETRDecoder' in head_type:
+                print(f"    → Transformer-based decoder")
+            elif 'Detect' in head_type:
+                print(f"    → Anchor-free detection")
+        
+    print(f"{'='*60}\n")
 
 
-class YOLOFocalLossTrainer:
+def train_with_focal_loss(model_name="yolov8s", 
+                          data_yaml="/home/almaankhan/data/coco/coco.yaml",
+                          epochs=100,
+                          imgsz=640,
+                          batch_size=64,
+                        #   patience=20,
+                          device_ids=[0, 1, 2],
+                          model_dir="/home/almaankhan/model/baseline"):
     """
-    Unified trainer for YOLO models with Focal Loss
-    Supports distributed training across multiple GPUs
-    """
+    Train YOLO model with custom Focal Loss trainer
     
-    def __init__(self, model_name="yolov8s", device_ids=[0, 1, 2]):
-        """
-        Initialize the trainer
-        
-        Args:
-            model_name: YOLO model size (yolov8n, yolov8s, yolov8m, etc.)
-            device_ids: List of GPU device IDs to use (default: [0, 1, 2])
-        """
-        self.model_name = model_name
-        self.device_ids = device_ids
-        self.num_gpus = len(device_ids)
-        self.model = YOLO(f"{model_name}.pt")
-        
-    def train(self, 
-              data_yaml,
-              epochs=100,
-              imgsz=640,
-              batch_size=16,
-              patience=20,
-              save_dir="runs/detect",
-              project_name="yolo_focal_loss"):
-        """
-        Train YOLO model with Focal Loss using custom trainer
-        Distributes training across multiple GPUs
-        
-        Args:
-            data_yaml: Path to data.yaml file for COCO dataset
-            epochs: Number of training epochs
-            imgsz: Image size for training
-            batch_size: Total batch size (will be divided among GPUs)
-            patience: Early stopping patience
-            save_dir: Directory to save results
-            project_name: Project name for results
-        """
-        
-        # Calculate batch size per GPU
-        batch_size_per_gpu = max(1, batch_size // self.num_gpus)
-        
-        print(f"\n{'='*60}")
-        print(f"Training {self.model_name.upper()} with Focal Loss")
-        print(f"{'='*60}")
-        print(f"Dataset: {data_yaml}")
-        print(f"Epochs: {epochs}")
-        print(f"Total Batch Size: {batch_size}")
-        print(f"Batch Size per GPU: {batch_size_per_gpu}")
-        print(f"Image Size: {imgsz}")
-        print(f"GPUs: {self.num_gpus} (Device IDs: {self.device_ids})")
-        print(f"Loss Function: Focal Loss (alpha=0.25, gamma=2.0)")
-        print(f"{'='*60}\n")
-        
-        # Train the model with custom trainer and distributed GPUs
-        results = self.model.train(
-            data=data_yaml,
-            epochs=epochs,
-            imgsz=imgsz,
-            batch=batch_size_per_gpu,  # Per-GPU batch size
-            device=self.device_ids,  # Multiple GPU IDs for distributed training
-            patience=patience,
-            save=True,
-            project=save_dir,
-            name=project_name,
-            verbose=True,
-            # Use custom trainer with Focal Loss
-            trainer=CustomDetectionTrainer,
-            # Data augmentation
-            augment=True,
-            mosaic=1.0,
-            close_mosaic=10,
-            cache=True,
-            # Additional optimization
-            fliplr=0.5,
-            flipud=0.5,
-            # Distributed training optimization
-            workers=8,  # More workers for multi-GPU
-        )
-        
-        return results
+    Args:
+        model_name: YOLO model size (yolov8s, yolo11s, yolo12s, rtdetr-l)
+        data_yaml: Path to data.yaml file for COCO dataset
+        epochs: Number of training epochs
+        imgsz: Image size for training
+        batch_size: Batch size
+        patience: Early stopping patience
+        device_ids: List of GPU device IDs to use
+        model_dir: Directory containing model weights
+    """
+    # Load from full path to avoid downloading
+    model_path = os.path.join(model_dir, f"{model_name}.pt")
+    if not os.path.exists(model_path):
+        raise FileNotFoundError(f"Model weights not found at {model_path}")
+    
+    print(f"[INFO] Loading {model_name} from {model_path}")
+    model = YOLO(model_path)
+    
+    print(f"\n{'='*60}")
+    print(f"Training {model_name.upper()} with Focal Loss")
+    print(f"{'='*60}")
+    print(f"Dataset: {data_yaml}")
+    print(f"Epochs: {epochs}")
+    print(f"Batch Size: {batch_size}")
+    print(f"Image Size: {imgsz}")
+    print(f"GPUs: {len(device_ids)} (Device IDs: {device_ids})")
+    print(f"Loss Function: Focal Loss (alpha=0.25, gamma=2.0)")
+    print(f"{'='*60}\n")
+    
+    # Print current loss function info
+    print_model_loss_info(model)
+    
+    # Train with custom trainer as per Ultralytics documentation
+    results = model.train(
+        trainer=CustomDetectionTrainer,  # Pass the custom trainer class
+        data=data_yaml,
+        epochs=epochs,
+        imgsz=imgsz,
+        batch=batch_size,
+        device=device_ids,
+        # patience=patience,
+        save=True,
+        project="runs/detect",
+        name=f"{model_name}_focal_loss",
+        verbose=True,
+        amp=False,  # Disable AMP to prevent model download during checks
+        optimizer='AdamW',
+        # Learning rate and warmup
+        lr0=1e-3,  # Initial learning rate
+        lrf=0.01,  # Final learning rate (for cosine scheduler)
+        warmup_epochs=0,  # No warmup
+        cos_lr=True,  # Use cosine annealing scheduler
+        # Data augmentation
+        augment=True,
+        mosaic=1.0,
+        close_mosaic=10,
+        cache=False,
+        # Additional optimization
+        fliplr=0.5,
+        flipud=0.5,
+        workers=4,  # Reduce workers to avoid multiprocessing issues
+        val=True
+    )
+    
+    return results
 
 
 
@@ -163,12 +213,15 @@ def main():
     """
     
     # Configuration
-    DATASET_YAML = "/home/almaankhan/data/data.yaml"  # Update this path
-    EPOCHS = 100
-    BATCH_SIZE = 48  # Total batch size (16 per GPU with 3 GPUs)
+    DATASET_YAML = "/home/almaankhan/data/coco/coco.yaml"
+    EPOCHS = 40
+    MODELS = ["yolo12s", "rtdetr-l"]
+    # MODELS = ["yolov8s"]
+    GPU_DEVICES = [0, 1, 2]  # Start with single GPU to test, can scale to [0,1,2] later
     IMG_SIZE = 640
-    MODELS = ["yolov8s", "yolo11s", "yolo12s"]
-    GPU_DEVICES = [0, 1, 2]  # Use GPUs 0, 1, 2
+    # MODELS = ["yolov8s", "yolo11s", "yolo12s", "rtdetr-l"]
+    BATCH_SIZE = 18
+    MODEL_DIR = "/home/almaankhan/model/baseline"  # Directory with pretrained weights
     
     # Check if dataset exists
     if not Path(DATASET_YAML).exists():
@@ -181,22 +234,21 @@ def main():
         print(f"\n{'#'*60}")
         print(f"# Training {model_name.upper()}")
         print(f"{'#'*60}\n")
-        
-        # Initialize trainer with multi-GPU support
-        trainer = YOLOFocalLossTrainer(model_name=model_name, device_ids=GPU_DEVICES)
-        
-        # Train with Focal Loss (distributed across 3 GPUs)
-        train_results = trainer.train(
+                
+        # Train with Focal Loss using custom trainer
+        train_results = train_with_focal_loss(
+            model_name=model_name,
             data_yaml=DATASET_YAML,
             epochs=EPOCHS,
             imgsz=IMG_SIZE,
-            batch_size=BATCH_SIZE,  # Total batch size
-            patience=20,
-            project_name=f"{model_name}_focal_loss_distributed",
+            batch_size=BATCH_SIZE,
+            # patience=20,
+            device_ids=[GPU_DEVICES] if isinstance(GPU_DEVICES, int) else GPU_DEVICES,
+            model_dir=MODEL_DIR
         )
         
         print(f"\n✓ {model_name.upper()} training complete!")
-        print(f"Results saved to: runs/detect/{model_name}_focal_loss_distributed/\n")
+        print(f"Results saved to: runs/detect/{model_name}_focal_loss/\n")
 
 
 if __name__ == "__main__":
