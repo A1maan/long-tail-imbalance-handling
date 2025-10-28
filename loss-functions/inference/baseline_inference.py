@@ -6,7 +6,7 @@ Critical for comparing imbalance handling techniques
 
 import torch
 import torchvision
-from ultralytics import YOLO
+from ultralytics import YOLO, RTDETR
 from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
 import os
@@ -22,6 +22,22 @@ import sys
 try:
     sys.path.insert(0, str(Path(__file__).parent.parent))
     from custom_trainer import CustomDetectionTrainer, FLDetectionModel, FLRTDETRModel
+    
+    # Register safe globals for PyTorch 2.6+ compatibility
+    import torch.serialization
+    torch.serialization.add_safe_globals([FLDetectionModel, FLRTDETRModel, CustomDetectionTrainer])
+    
+    # Also add the old class name for backwards compatibility if model was saved with old name
+    try:
+        # Create an alias for the old class name
+        import sys
+        import custom_trainer
+        if not hasattr(custom_trainer, 'CustomRTDETRModel'):
+            custom_trainer.CustomRTDETRModel = FLRTDETRModel
+        torch.serialization.add_safe_globals([custom_trainer.CustomRTDETRModel])
+    except Exception:
+        pass
+        
 except ImportError as e:
     print(f"Warning: Could not import custom_trainer: {e}")
     print("Some models with custom trainers may not load correctly")
@@ -230,7 +246,12 @@ class BaselineInferenceRunner:
             # Load model
             print(f"Loading model from: {model_path}")
             try:
-                model = YOLO(model_path)
+                # For RT-DETR models, try loading with task specification
+                if "rtdetr" in model_name.lower() or "rt-detr" in model_name.lower():
+                    print(f"  Detected RT-DETR model, loading with task='detect'")
+                    model = RTDETR(model_path)
+                else:
+                    model = YOLO(model_path)
             except ModuleNotFoundError as e:
                 if "custom_trainer" in str(e):
                     print(f"⚠️  Model requires 'custom_trainer' module for inference")
@@ -242,6 +263,37 @@ class BaselineInferenceRunner:
                     return None
                 else:
                     raise
+            except Exception as e:
+                print(f"⚠️  Error loading model: {str(e)}")
+                print(f"   Attempting alternative loading method...")
+                try:
+                    # Try loading with weights_only=False for PyTorch 2.6+ compatibility
+                    import torch
+                    
+                    # For RT-DETR models, try loading with weights_only=False
+                    if "rtdetr" in model_name.lower():
+                        print(f"   RT-DETR model detected - attempting load with weights_only=False")
+                        
+                        # First, ensure CustomRTDETRModel alias exists
+                        import custom_trainer
+                        if not hasattr(custom_trainer, 'CustomRTDETRModel'):
+                            custom_trainer.CustomRTDETRModel = custom_trainer.FLRTDETRModel
+                            print(f"   Created alias: CustomRTDETRModel -> FLRTDETRModel")
+                        
+                        # Try loading the model with YOLO, which should now work
+                        try:
+                            model = YOLO(model_path, task='detect')
+                            print(f"   ✓ Successfully loaded RT-DETR model")
+                        except Exception as load_err:
+                            print(f"   Still failed: {str(load_err)}")
+                            print(f"   Skipping this model...")
+                            return None
+                    else:
+                        # For non-RT-DETR, try standard loading
+                        model = YOLO(model_path)
+                except Exception as e2:
+                    print(f"✗ Failed to load model: {str(e2)}")
+                    return None
             
             # Run inference on validation set
             print(f"Model device: {self.device}")
@@ -349,10 +401,6 @@ class BaselineInferenceRunner:
             if model_type == "faster_rcnn":
                 model = torchvision.models.detection.fasterrcnn_resnet50_fpn_v2(pretrained=False)
                 weights_path = os.path.join(self.model_dir, "faster_rcnn/best.pt")
-                
-            elif model_type == "retinanet":
-                model = torchvision.models.detection.retinanet_resnet50_fpn_v2(pretrained=False)
-                weights_path = os.path.join(self.model_dir, "best.pt")
             
             # Load weights
             if os.path.exists(weights_path):
@@ -497,11 +545,13 @@ class BaselineInferenceRunner:
         print(f"Device: {self.device}")
         
         # # YOLO-based models
+        # NOTE: RT-DETR models trained with custom trainers may fail to load for inference
+        # If RT-DETR fails, comment it out or train without custom trainer for inference
         yolo_models = [
             ("yolo8/best.pt", "YOLOv8s"),
-        #     ("yolo11/best.pt", "YOLO11s"),
-        #     ("yolo12/best.pt", "YOLO12s"),
-        #     ("rtdetr-l/best.pt", "RT-DETR-L"),
+            ("yolo11/best.pt", "YOLO11s"),
+            ("yolo12/best.pt", "YOLO12s"),
+            ("rtdetr-l/best.pt", "RT-DETR-L"),  # Comment out if loading fails
         ]
         
         print(f"\n{'*'*60}")
@@ -524,7 +574,6 @@ class BaselineInferenceRunner:
         
         torchvision_models = [
             ("faster_rcnn/best.pt", "Faster R-CNN", "faster_rcnn"),
-            # ("retinanet/best.pt", "RetinaNet", "retinanet"),
         ]
         
         for model_file, model_name, model_type in torchvision_models:

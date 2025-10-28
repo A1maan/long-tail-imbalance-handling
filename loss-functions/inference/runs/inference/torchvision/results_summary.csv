@@ -1,0 +1,2 @@
+model_name,model_type,num_images,total_detections,avg_detections_per_image,confidence_threshold,inference_time_ms,device,timestamp,mAP@0.5,mAP@0.75,mAP@[0.5:0.95],precision,recall,head_classes_AP,tail_classes_AP,medium_classes_AP
+Faster R-CNN,TorchVision,5000,380203,76.0406,0.5,132.42034981384276,cuda,2025-10-28T16:27:38.535450,0.45893481763748256,0.34284386656099664,0.31297468125870437,0.15361317256261428,0.3985329521075758,,,

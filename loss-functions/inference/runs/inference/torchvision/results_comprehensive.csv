@@ -1,0 +1,2 @@
+Model,Type,mAP@0.5,mAP@0.75,mAP@[0.5:0.95],Precision,Recall,Head_AP,Medium_AP,Tail_AP,Num_Images,Avg_Detections,Inference_Time_ms,Device
+Faster R-CNN,TorchVision,0.4589,0.3428,0.3130,0.1536,0.3985,0.0000,0.0000,0.0000,5000,76.04,132.42,cuda

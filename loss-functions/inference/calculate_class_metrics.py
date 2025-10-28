@@ -29,28 +29,19 @@ class ClassMetricsCalculator:
         'hair drier', 'toothbrush'
     ]
     
-    # Long-tail grouping from baseline
+    # Long-tail grouping - MUST match baseline_inference.py
     HEAD_CLASSES = [
-        'person', 'bicycle', 'car', 'motorcycle', 'bus', 'train', 'truck',
-        'boat', 'cat', 'dog', 'horse', 'cow', 'elephant', 'bear', 'bottle',
-        'chair', 'couch', 'toilet', 'tv'
-    ]
-    
-    MEDIUM_CLASSES = [
-        'airplane', 'dog', 'sheep', 'zebra', 'giraffe', 'backpack',
-        'handbag', 'frisbee', 'skis', 'snowboard', 'sports ball', 'kite',
-        'baseball bat', 'baseball glove', 'skateboard', 'tennis racket',
-        'wine glass', 'cup', 'fork', 'knife', 'bowl', 'banana', 'apple',
-        'sandwich', 'orange', 'broccoli', 'carrot', 'pizza', 'dining table',
-        'bed', 'laptop', 'mouse', 'keyboard', 'book', 'clock'
+        'person', 'car', 'dog', 'cat', 'bicycle', 'boat', 'bird', 'chair', 
+        'cow', 'horse', 'sheep', 'traffic light', 'stop sign', 'bench'
     ]
     
     TAIL_CLASSES = [
-        'fire hydrant', 'stop sign', 'parking meter', 'bench', 'umbrella',
-        'tie', 'suitcase', 'surfboard', 'bottle', 'glass', 'cup', 'fork',
-        'knife', 'spoon', 'bowl', 'hot dog', 'donut', 'cake', 'potted plant',
-        'sink', 'refrigerator', 'scissors', 'teddy bear', 'hair drier', 'toothbrush'
+        'toothbrush', 'hair drier', 'scissors', 'vase', 'clock', 'book',
+        'remote', 'keyboard', 'mouse', 'laptop', 'oven', 'toaster', 'sink'
     ]
+    
+    # MEDIUM_CLASSES is computed as: all classes - HEAD - TAIL
+    # (No explicit list needed, calculated in aggregate_by_frequency)
     
     def __init__(self, coco_annotation_file="/home/almaankhan/data/coco/annotations/instances_val2017.json"):
         """Initialize with COCO annotations."""
@@ -143,7 +134,6 @@ class ClassMetricsCalculator:
         
         # Convert class names to category IDs for lookup
         head_cat_ids = [self.coco_name_to_id[name] for name in self.HEAD_CLASSES if name in self.coco_name_to_id]
-        medium_cat_ids = [self.coco_name_to_id[name] for name in self.MEDIUM_CLASSES if name in self.coco_name_to_id]
         tail_cat_ids = [self.coco_name_to_id[name] for name in self.TAIL_CLASSES if name in self.coco_name_to_id]
         
         # Head classes
@@ -154,7 +144,7 @@ class ClassMetricsCalculator:
         tail_aps = [class_metrics[cat_id]["AP"] for cat_id in tail_cat_ids if cat_id in class_metrics]
         tail_ap = float(np.mean(tail_aps)) if tail_aps else 0.0
         
-        # Medium classes (everything else)
+        # Medium classes (everything else - computed dynamically)
         all_cat_ids = set(class_metrics.keys())
         medium_cat_ids_set = all_cat_ids - set(head_cat_ids) - set(tail_cat_ids)
         medium_aps = [class_metrics[cat_id]["AP"] for cat_id in medium_cat_ids_set]
@@ -266,7 +256,9 @@ class ClassMetricsCalculator:
             }
             
             # Detect framework based on model name
-            if any(name in model_name.lower() for name in ["yolo", "rtdetr"]):
+            # Note: RT-DETR model name has hyphen: "RT-DETR-L"
+            model_lower = model_name.lower().replace("-", "")
+            if any(name in model_lower for name in ["yolo", "rtdetr"]):
                 ultralytics_results[model_name] = summary_item
             else:
                 torchvision_results[model_name] = summary_item

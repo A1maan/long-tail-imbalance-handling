@@ -1,0 +1,62 @@
+[
+  {
+    "Model": "RT-DETR-L",
+    "Overall AP": "0.3618",
+    "AP@0.5": "0.5266",
+    "AP@0.75": "0.3935",
+    "Head AP": "0.3917",
+    "Medium AP": "0.3693",
+    "Tail AP": "0.3299",
+    "# Head": 14,
+    "# Medium": 53,
+    "# Tail": 11
+  },
+  {
+    "Model": "YOLO11s",
+    "Overall AP": "0.2162",
+    "AP@0.5": "0.2888",
+    "AP@0.75": "0.2373",
+    "Head AP": "0.2451",
+    "Medium AP": "0.2212",
+    "Tail AP": "0.1948",
+    "# Head": 14,
+    "# Medium": 53,
+    "# Tail": 11
+  },
+  {
+    "Model": "YOLO12s",
+    "Overall AP": "0.1800",
+    "AP@0.5": "0.2373",
+    "AP@0.75": "0.1974",
+    "Head AP": "0.2052",
+    "Medium AP": "0.1874",
+    "Tail AP": "0.1451",
+    "# Head": 14,
+    "# Medium": 53,
+    "# Tail": 11
+  },
+  {
+    "Model": "YOLOv8s",
+    "Overall AP": "0.2401",
+    "AP@0.5": "0.3187",
+    "AP@0.75": "0.2646",
+    "Head AP": "0.2661",
+    "Medium AP": "0.2468",
+    "Tail AP": "0.2137",
+    "# Head": 14,
+    "# Medium": 53,
+    "# Tail": 11
+  },
+  {
+    "Model": "Faster_R-CNN",
+    "Overall AP": "0.3130",
+    "AP@0.5": "0.4589",
+    "AP@0.75": "0.3428",
+    "Head AP": "0.3536",
+    "Medium AP": "0.3171",
+    "Tail AP": "0.2894",
+    "# Head": 14,
+    "# Medium": 53,
+    "# Tail": 11
+  }
+]

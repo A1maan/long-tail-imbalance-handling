@@ -44,12 +44,9 @@ class PredictionVisualizer:
         self.predictions = {}
         self.load_predictions()
         
-        # Create output directories - separate by framework
+        # Create output directories - unified approach
         self.output_dir = Path("runs/inference/visualizations")
-        self.ultralytics_output_dir = self.output_dir / "ultralytics"
-        self.torchvision_output_dir = self.output_dir / "torchvision"
-        self.ultralytics_output_dir.mkdir(parents=True, exist_ok=True)
-        self.torchvision_output_dir.mkdir(parents=True, exist_ok=True)
+        self.output_dir.mkdir(parents=True, exist_ok=True)
         
     def load_predictions(self):
         """Load all prediction JSON files."""
@@ -68,12 +65,6 @@ class PredictionVisualizer:
         
         for model_name, preds in self.predictions.items():
             print(f"  Visualizing {model_name}...")
-            
-            # Determine framework and output directory
-            if any(name in model_name.lower() for name in ["yolo", "rtdetr"]):
-                output_dir = self.ultralytics_output_dir
-            else:
-                output_dir = self.torchvision_output_dir
             
             # Create predictions lookup by image_id
             preds_by_image = {}
@@ -122,60 +113,41 @@ class PredictionVisualizer:
                 ax.axis('off')
             
             plt.tight_layout()
-            output_path = output_dir / f"samples_{model_name}.png"
+            output_path = self.output_dir / f"samples_{model_name}.png"
             plt.savefig(output_path, dpi=100, bbox_inches='tight')
             plt.close()
             print(f"    Saved: {output_path}")
     
     def create_metrics_comparison_chart(self, metrics_summary):
-        """Create comparison charts for all models, separated by framework."""
+        """Create unified comparison charts for all models."""
         print("\nCreating metrics comparison charts...")
         
         if not metrics_summary:
             print("  No metrics data available")
             return
         
-        # Separate by framework
-        ultralytics_models = {}
-        torchvision_models = {}
-        
-        for model_name, metrics in metrics_summary.items():
-            if any(name in model_name.lower() for name in ["yolo", "rtdetr"]):
-                ultralytics_models[model_name] = metrics
-            else:
-                torchvision_models[model_name] = metrics
-        
-        # Create charts for each framework
-        self._create_framework_comparison(ultralytics_models, "Ultralytics", self.ultralytics_output_dir)
-        self._create_framework_comparison(torchvision_models, "TorchVision", self.torchvision_output_dir)
-    
-    def _create_framework_comparison(self, metrics_dict, framework_name, output_dir):
-        """Create comparison charts for a specific framework."""
-        if not metrics_dict:
-            return
-        
-        print(f"  Creating {framework_name} charts...")
-        models = list(metrics_dict.keys())
+        models = list(metrics_summary.keys())
         
         # Extract metrics
-        overall_ap = [metrics_dict[m].get('overall', {}).get('AP', 0) for m in models]
-        overall_ap50 = [metrics_dict[m].get('overall', {}).get('AP@0.5', 0) for m in models]
-        overall_ap75 = [metrics_dict[m].get('overall', {}).get('AP@0.75', 0) for m in models]
+        overall_ap = [metrics_summary[m].get('overall', {}).get('AP', 0) for m in models]
+        overall_ap50 = [metrics_summary[m].get('overall', {}).get('AP@0.5', 0) for m in models]
+        overall_ap75 = [metrics_summary[m].get('overall', {}).get('AP@0.75', 0) for m in models]
         
-        head_ap = [metrics_dict[m].get('head_classes_AP', 0) for m in models]
-        medium_ap = [metrics_dict[m].get('medium_classes_AP', 0) for m in models]
-        tail_ap = [metrics_dict[m].get('tail_classes_AP', 0) for m in models]
+        head_ap = [metrics_summary[m].get('head_classes_AP', 0) for m in models]
+        medium_ap = [metrics_summary[m].get('medium_classes_AP', 0) for m in models]
+        tail_ap = [metrics_summary[m].get('tail_classes_AP', 0) for m in models]
         
         # 1. Overall metrics comparison
-        fig, axes = plt.subplots(1, 3, figsize=(16, 5))
+        fig, axes = plt.subplots(1, 3, figsize=(18, 6))
         
         metrics_names = ['AP', 'AP@0.5', 'AP@0.75']
         metrics_values = [overall_ap, overall_ap50, overall_ap75]
+        colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd']
         
         for ax, metric_name, values in zip(axes, metrics_names, metrics_values):
-            bars = ax.bar(models, values, color=['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2'])
+            bars = ax.bar(models, values, color=colors[:len(models)])
             ax.set_ylabel(metric_name, fontsize=12, fontweight='bold')
-            ax.set_title(f'{framework_name} - Overall {metric_name}', fontsize=13, fontweight='bold')
+            ax.set_title(f'Overall {metric_name}', fontsize=13, fontweight='bold')
             ax.set_ylim(0, 0.6)
             
             # Add value labels on bars
@@ -188,13 +160,13 @@ class PredictionVisualizer:
             ax.grid(axis='y', alpha=0.3)
         
         plt.tight_layout()
-        output_path = output_dir / f"{framework_name.lower()}_metrics_comparison.png"
+        output_path = self.output_dir / "metrics_comparison.png"
         plt.savefig(output_path, dpi=150, bbox_inches='tight')
         plt.close()
-        print(f"    Saved: {output_path}")
+        print(f"  Saved: {output_path}")
         
         # 2. Head/Medium/Tail comparison
-        fig, ax = plt.subplots(figsize=(14, 6))
+        fig, ax = plt.subplots(figsize=(16, 7))
         
         x = np.arange(len(models))
         width = 0.25
@@ -204,9 +176,9 @@ class PredictionVisualizer:
         bars3 = ax.bar(x + width, tail_ap, width, label='Tail Classes', color='#e74c3c', alpha=0.8)
         
         ax.set_ylabel('AP', fontsize=12, fontweight='bold')
-        ax.set_title(f'{framework_name} - Performance by Class Frequency', fontsize=13, fontweight='bold')
+        ax.set_title('Performance by Class Frequency', fontsize=13, fontweight='bold')
         ax.set_xticks(x)
-        ax.set_xticklabels(models, rotation=45)
+        ax.set_xticklabels(models, rotation=45, ha='right')
         ax.legend(fontsize=11)
         ax.set_ylim(0, 0.6)
         ax.grid(axis='y', alpha=0.3)
@@ -220,72 +192,20 @@ class PredictionVisualizer:
                            f'{height:.2f}', ha='center', va='bottom', fontsize=8)
         
         plt.tight_layout()
-        output_path = output_dir / f"{framework_name.lower()}_head_medium_tail_comparison.png"
+        output_path = self.output_dir / "head_medium_tail_comparison.png"
         plt.savefig(output_path, dpi=150, bbox_inches='tight')
         plt.close()
-        print(f"    Saved: {output_path}")
+        print(f"  Saved: {output_path}")
         
         # 3. Heatmap of all metrics
-        self._create_framework_heatmap(models, metrics_dict, framework_name, output_dir)
+        self._create_metrics_heatmap(models, metrics_summary)
     
-    def _create_framework_heatmap(self, models, metrics_dict, framework_name, output_dir):
-        """Create a heatmap of all metrics for a specific framework."""
-        print(f"    Creating {framework_name} metrics heatmap...")
-        
-        # Collect all metrics
-        metrics_data = []
-        metric_names = []
-        
-        for model in models:
-            model_metrics = metrics_dict[model]
-            row = []
-            
-            # Overall metrics
-            row.append(model_metrics.get('overall', {}).get('AP', 0))
-            row.append(model_metrics.get('overall', {}).get('AP@0.5', 0))
-            row.append(model_metrics.get('overall', {}).get('AP@0.75', 0))
-            
-            # Head/Medium/Tail
-            row.append(model_metrics.get('head_classes_AP', 0))
-            row.append(model_metrics.get('medium_classes_AP', 0))
-            row.append(model_metrics.get('tail_classes_AP', 0))
-            
-            metrics_data.append(row)
-        
-        metric_names = ['Overall AP', 'Overall AP@0.5', 'Overall AP@0.75',
-                       'Head AP', 'Medium AP', 'Tail AP']
-        
-        # Create heatmap
-        fig, ax = plt.subplots(figsize=(10, 6))
-        im = ax.imshow(metrics_data, cmap='RdYlGn', aspect='auto', vmin=0, vmax=0.6)
-        
-        ax.set_xticks(np.arange(len(metric_names)))
-        ax.set_yticks(np.arange(len(models)))
-        ax.set_xticklabels(metric_names, rotation=45, ha='right')
-        ax.set_yticklabels(models)
-        
-        # Add text annotations
-        for i in range(len(models)):
-            for j in range(len(metric_names)):
-                text = ax.text(j, i, f'{metrics_data[i][j]:.3f}',
-                             ha="center", va="center", color="black", fontsize=10, fontweight='bold')
-        
-        plt.colorbar(im, ax=ax, label='AP Score')
-        plt.title(f'{framework_name} Performance Heatmap', fontsize=13, fontweight='bold', pad=20)
-        plt.tight_layout()
-        
-        output_path = output_dir / f"{framework_name.lower()}_metrics_heatmap.png"
-        plt.savefig(output_path, dpi=150, bbox_inches='tight')
-        plt.close()
-        print(f"    Saved: {output_path}")
-    
-    def create_metrics_heatmap(self, models, metrics_summary):
-        """Create a heatmap of all metrics. (Deprecated - use _create_framework_heatmap)"""
+    def _create_metrics_heatmap(self, models, metrics_summary):
+        """Create a unified heatmap of all metrics."""
         print("  Creating metrics heatmap...")
         
         # Collect all metrics
         metrics_data = []
-        metric_names = []
         
         for model in models:
             model_metrics = metrics_summary[model]
@@ -307,7 +227,7 @@ class PredictionVisualizer:
                        'Head AP', 'Medium AP', 'Tail AP']
         
         # Create heatmap
-        fig, ax = plt.subplots(figsize=(10, 6))
+        fig, ax = plt.subplots(figsize=(12, max(6, len(models) * 0.8)))
         im = ax.imshow(metrics_data, cmap='RdYlGn', aspect='auto', vmin=0, vmax=0.6)
         
         ax.set_xticks(np.arange(len(metric_names)))
@@ -331,37 +251,16 @@ class PredictionVisualizer:
         print(f"  Saved: {output_path}")
     
     def create_summary_table(self, metrics_summary):
-        """Create and save summary tables, separated by framework."""
-        print("\nCreating summary tables...")
+        """Create and save unified summary table."""
+        print("\nCreating summary table...")
         
         if not metrics_summary:
             print("  No metrics data available")
             return
         
-        # Separate by framework
-        ultralytics_models = {}
-        torchvision_models = {}
-        
-        for model_name, metrics in metrics_summary.items():
-            if any(name in model_name.lower() for name in ["yolo", "rtdetr"]):
-                ultralytics_models[model_name] = metrics
-            else:
-                torchvision_models[model_name] = metrics
-        
-        # Create tables for each framework
-        self._create_framework_summary_table(ultralytics_models, "Ultralytics", self.ultralytics_output_dir)
-        self._create_framework_summary_table(torchvision_models, "TorchVision", self.torchvision_output_dir)
-    
-    def _create_framework_summary_table(self, metrics_dict, framework_name, output_dir):
-        """Create and save a summary table for a specific framework."""
-        if not metrics_dict:
-            return
-        
-        print(f"  Creating {framework_name} summary table...")
-        
         # Create table data
         rows = []
-        for model, metrics in metrics_dict.items():
+        for model, metrics in metrics_summary.items():
             rows.append({
                 'Model': model,
                 'Overall AP': f"{metrics.get('overall', {}).get('AP', 0):.4f}",
@@ -376,14 +275,14 @@ class PredictionVisualizer:
             })
         
         # Save to JSON
-        output_path = output_dir / "metrics_summary.json"
+        output_path = self.output_dir / "metrics_summary.json"
         with open(output_path, 'w') as f:
             json.dump(rows, f, indent=2)
-        print(f"    Saved: {output_path}")
+        print(f"  Saved: {output_path}")
         
         # Print table
         print(f"\n{'='*130}")
-        print(f"{framework_name} METRICS SUMMARY")
+        print(f"MODEL PERFORMANCE SUMMARY")
         print(f"{'='*130}")
         print(f"{'Model':<20} {'Overall AP':<12} {'AP@0.5':<12} {'AP@0.75':<12} {'Head AP':<12} {'Medium AP':<12} {'Tail AP':<12}")
         print(f"{'-'*130}")
@@ -396,30 +295,43 @@ def run_calculate_class_metrics():
     """Run calculate_class_metrics.py to get metrics summary."""
     print("Calculating class metrics...")
     import subprocess
-    result = subprocess.run(['python', 'calculate_class_metrics.py'], 
-                          capture_output=True, text=True)
+    
+    # Try running with conda environment first, fallback to plain python
+    try:
+        result = subprocess.run(['conda', 'run', '-n', 'baseline', 'python', 'calculate_class_metrics.py'], 
+                              capture_output=True, text=True, timeout=300)
+    except (subprocess.TimeoutExpired, FileNotFoundError):
+        # Fallback to plain python if conda not available
+        result = subprocess.run(['python', 'calculate_class_metrics.py'], 
+                              capture_output=True, text=True, timeout=300)
     
     if result.returncode == 0:
         print("✓ Class metrics calculated successfully")
-        # Try to load the metrics summary from both framework directories
-        ultralytics_file = Path("runs/inference/ultralytics/metrics_summary.json")
-        torchvision_file = Path("runs/inference/torchvision/metrics_summary.json")
-        
-        combined_metrics = {}
-        if ultralytics_file.exists():
-            with open(ultralytics_file) as f:
-                ultralytics_data = json.load(f)
-                combined_metrics.update(ultralytics_data)
-        if torchvision_file.exists():
-            with open(torchvision_file) as f:
-                torchvision_data = json.load(f)
-                combined_metrics.update(torchvision_data)
-        
-        return combined_metrics if combined_metrics else {}
     else:
-        print(f"✗ Error calculating class metrics:\n{result.stderr}")
+        print(f"⚠ Warning: calculate_class_metrics.py had issues:\n{result.stderr[:500]}")
+        print("  Attempting to load existing metrics...")
     
-    return {}
+    # Load the metrics summary from both framework directories
+    ultralytics_file = Path("runs/inference/ultralytics/metrics_summary.json")
+    torchvision_file = Path("runs/inference/torchvision/metrics_summary.json")
+    
+    combined_metrics = {}
+    if ultralytics_file.exists():
+        with open(ultralytics_file) as f:
+            ultralytics_data = json.load(f)
+            combined_metrics.update(ultralytics_data)
+            print(f"  Loaded {len(ultralytics_data)} Ultralytics models")
+    
+    if torchvision_file.exists():
+        with open(torchvision_file) as f:
+            torchvision_data = json.load(f)
+            combined_metrics.update(torchvision_data)
+            print(f"  Loaded {len(torchvision_data)} TorchVision models")
+    
+    if not combined_metrics:
+        print("✗ No metrics found! Please run calculate_class_metrics.py first.")
+    
+    return combined_metrics
 
 
 if __name__ == "__main__":
