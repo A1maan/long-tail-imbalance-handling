@@ -32,6 +32,18 @@ import seaborn as sns
 plt.style.use('seaborn-v0_8-darkgrid')
 sns.set_palette("husl")
 
+# Enhanced figure quality and font sizes
+plt.rcParams['figure.facecolor'] = 'white'
+plt.rcParams['font.size'] = 10
+plt.rcParams['axes.labelsize'] = 11
+plt.rcParams['axes.titlesize'] = 12
+plt.rcParams['xtick.labelsize'] = 9
+plt.rcParams['ytick.labelsize'] = 9
+plt.rcParams['legend.fontsize'] = 10
+plt.rcParams['lines.linewidth'] = 2
+plt.rcParams['axes.linewidth'] = 1.5
+plt.rcParams['grid.linewidth'] = 1
+
 
 def load_baseline_metrics(filepath):
     """Load baseline metrics summary."""
@@ -80,11 +92,12 @@ def load_ensemble_metrics(filepath):
 
 def create_overall_comparison(baseline, ensemble, output_dir):
     """Create overall metrics comparison chart."""
-    fig, axes = plt.subplots(1, 3, figsize=(16, 5))
-    fig.suptitle('Baseline vs Ensemble: Overall Metrics', fontsize=14, fontweight='bold')
+    fig, axes = plt.subplots(1, 3, figsize=(18, 6))
+    fig.suptitle('Baseline vs Ensemble: Overall Metrics', fontsize=16, fontweight='bold')
     
     metrics = ['AP', 'AP@0.5', 'AP@0.75']
-    colors_baseline = sns.color_palette("Blues", n_colors=len(baseline))
+    # Use darker, more saturated colors
+    colors_baseline = ['#1f77b4', '#2ca02c', '#d62728', '#9467bd', '#ff7f0e', '#17becf'][:len(baseline)]
     color_ensemble = '#E74C3C'  # Red for ensemble
     
     for idx, metric in enumerate(metrics):
@@ -95,45 +108,48 @@ def create_overall_comparison(baseline, ensemble, output_dir):
         baseline_names = sorted(baseline.keys())
         x_pos = np.arange(len(baseline_names))
         
-        bars1 = ax.bar(x_pos - 0.2, baseline_values, 0.4, label='Baseline Models', color=colors_baseline, alpha=0.8)
+        bars1 = ax.bar(x_pos - 0.2, baseline_values, 0.4, label='Baseline Models', color=colors_baseline, alpha=0.9)
         
         # Ensemble
         ensemble_value = ensemble['Ensemble'][metric]
-        bars2 = ax.bar(len(baseline_names) - 0.2, ensemble_value, 0.4, label='Ensemble', color=color_ensemble, alpha=0.8)
+        bars2 = ax.bar(len(baseline_names) - 0.2, ensemble_value, 0.4, label='Ensemble', color=color_ensemble, alpha=0.9)
         
-        ax.set_ylabel('Score', fontweight='bold')
-        ax.set_title(metric, fontsize=12, fontweight='bold')
+        ax.set_ylabel('Score', fontweight='bold', fontsize=11)
+        ax.set_title(metric, fontsize=13, fontweight='bold')
         ax.set_xticks(list(x_pos) + [len(baseline_names)])
-        ax.set_xticklabels(baseline_names + ['Ensemble'], rotation=45, ha='right')
-        ax.set_ylim(0, max(baseline_values + [ensemble_value]) * 1.1)
-        ax.grid(axis='y', alpha=0.3)
+        ax.set_xticklabels(baseline_names + ['Ensemble'], rotation=45, ha='right', fontsize=10)
+        max_val = max(baseline_values + [ensemble_value])
+        ax.set_ylim(0, max_val * 1.25)  # Increased to accommodate text
+        ax.grid(axis='y', alpha=0.4, linewidth=0.8)
+        ax.set_axisbelow(True)
         
-        # Add value labels on bars
+        # Add value labels on bars with dark color
         for bars in [bars1, bars2]:
             for bar in bars:
                 height = bar.get_height()
                 ax.text(bar.get_x() + bar.get_width()/2., height,
                        f'{height:.3f}',
-                       ha='center', va='bottom', fontsize=8)
+                       ha='center', va='bottom', fontsize=9, fontweight='bold', color='black')
         
         if idx == 0:
-            ax.legend()
+            ax.legend(fontsize=11, loc='upper left', framealpha=0.95, bbox_to_anchor=(0.02, 0.98))
     
     plt.tight_layout()
     output_path = Path(output_dir) / "01_overall_metrics_comparison.png"
-    plt.savefig(output_path, dpi=300, bbox_inches='tight')
+    plt.savefig(output_path, dpi=300, bbox_inches='tight', facecolor='white', edgecolor='none')
     print(f"✓ Saved overall metrics comparison to {output_path}")
     plt.close()
 
 
 def create_class_frequency_comparison(baseline, ensemble, output_dir):
     """Create head/medium/tail class comparison."""
-    fig, axes = plt.subplots(1, 3, figsize=(16, 5))
-    fig.suptitle('Class-wise Performance: Head / Medium / Tail', fontsize=14, fontweight='bold')
+    fig, axes = plt.subplots(1, 3, figsize=(18, 6))
+    fig.suptitle('Class-wise Performance: Head / Medium / Tail', fontsize=16, fontweight='bold')
     
     class_types = ['head_AP', 'medium_AP', 'tail_AP']
     class_labels = ['Head Classes', 'Medium Classes', 'Tail Classes']
-    colors_baseline = sns.color_palette("Greens", n_colors=len(baseline))
+    # Use darker, more saturated colors
+    colors_baseline = ['#1f77b4', '#2ca02c', '#d62728', '#9467bd', '#ff7f0e', '#17becf'][:len(baseline)]
     color_ensemble = '#E74C3C'
     
     for idx, (class_type, class_label) in enumerate(zip(class_types, class_labels)):
@@ -143,45 +159,47 @@ def create_class_frequency_comparison(baseline, ensemble, output_dir):
         baseline_names = sorted(baseline.keys())
         x_pos = np.arange(len(baseline_names))
         
-        bars1 = ax.bar(x_pos - 0.2, baseline_values, 0.4, label='Baseline Models', color=colors_baseline, alpha=0.8)
+        bars1 = ax.bar(x_pos - 0.2, baseline_values, 0.4, label='Baseline Models', color=colors_baseline, alpha=0.9)
         ensemble_value = ensemble['Ensemble'][class_type]
-        bars2 = ax.bar(len(baseline_names) - 0.2, ensemble_value, 0.4, label='Ensemble', color=color_ensemble, alpha=0.8)
+        bars2 = ax.bar(len(baseline_names) - 0.2, ensemble_value, 0.4, label='Ensemble', color=color_ensemble, alpha=0.9)
         
-        ax.set_ylabel('AP Score', fontweight='bold')
-        ax.set_title(class_label, fontsize=12, fontweight='bold')
+        ax.set_ylabel('AP Score', fontweight='bold', fontsize=11)
+        ax.set_title(class_label, fontsize=13, fontweight='bold')
         ax.set_xticks(list(x_pos) + [len(baseline_names)])
-        ax.set_xticklabels(baseline_names + ['Ensemble'], rotation=45, ha='right')
-        ax.set_ylim(0, max(baseline_values + [ensemble_value]) * 1.1)
-        ax.grid(axis='y', alpha=0.3)
+        ax.set_xticklabels(baseline_names + ['Ensemble'], rotation=45, ha='right', fontsize=10)
+        max_val = max(baseline_values + [ensemble_value])
+        ax.set_ylim(0, max_val * 1.25)  # Increased to accommodate text
+        ax.grid(axis='y', alpha=0.4, linewidth=0.8)
+        ax.set_axisbelow(True)
         
         for bars in [bars1, bars2]:
             for bar in bars:
                 height = bar.get_height()
                 ax.text(bar.get_x() + bar.get_width()/2., height,
                        f'{height:.3f}',
-                       ha='center', va='bottom', fontsize=8)
+                       ha='center', va='bottom', fontsize=9, fontweight='bold', color='black')
         
         if idx == 0:
-            ax.legend()
+            ax.legend(fontsize=11, loc='upper left', framealpha=0.95, bbox_to_anchor=(0.02, 0.98))
     
     plt.tight_layout()
     output_path = Path(output_dir) / "02_class_frequency_comparison.png"
-    plt.savefig(output_path, dpi=300, bbox_inches='tight')
+    plt.savefig(output_path, dpi=300, bbox_inches='tight', facecolor='white', edgecolor='none')
     print(f"✓ Saved class frequency comparison to {output_path}")
     plt.close()
 
 
 def create_model_rankings(baseline, ensemble, output_dir):
     """Create model rankings for each metric."""
-    fig, axes = plt.subplots(2, 3, figsize=(16, 10))
-    fig.suptitle('Model Rankings by Metric', fontsize=14, fontweight='bold')
+    fig, axes = plt.subplots(2, 3, figsize=(18, 11))
+    fig.suptitle('Model Rankings by Metric', fontsize=16, fontweight='bold')
     
     metrics = ['AP', 'AP@0.5', 'AP@0.75', 'head_AP', 'medium_AP', 'tail_AP']
     metric_labels = ['mAP@[0.5:0.95]', 'mAP@0.5', 'mAP@0.75', 'Head AP', 'Medium AP', 'Tail AP']
     
     all_models = {**baseline, **ensemble}
-    colors_baseline = sns.color_palette("Blues", n_colors=len(baseline))
-    color_ensemble = '#E74C3C'
+    # Use darker, more saturated colors
+    color_palette = ['#1f77b4', '#2ca02c', '#d62728', '#9467bd', '#ff7f0e', '#17becf', '#E74C3C']
     
     for idx, (metric, label) in enumerate(zip(metrics, metric_labels)):
         ax = axes[idx // 3, idx % 3]
@@ -190,23 +208,27 @@ def create_model_rankings(baseline, ensemble, output_dir):
         scores.sort(key=lambda x: x[1], reverse=True)
         
         names, values = zip(*scores)
-        colors = [color_ensemble if name == 'Ensemble' else colors_baseline[i % len(colors_baseline)]
-                 for i, name in enumerate(names)]
+        colors = [color_palette[i % len(color_palette)] for i in range(len(names))]
         
-        bars = ax.barh(names, values, color=colors, alpha=0.8)
-        ax.set_xlabel('Score', fontweight='bold')
-        ax.set_title(label, fontsize=11, fontweight='bold')
-        ax.grid(axis='x', alpha=0.3)
+        bars = ax.barh(names, values, color=colors, alpha=0.9)
+        ax.set_xlabel('Score', fontweight='bold', fontsize=11)
+        ax.set_title(label, fontsize=13, fontweight='bold')
+        ax.grid(axis='x', alpha=0.4, linewidth=0.8)
+        ax.set_axisbelow(True)
         
-        # Add value labels
+        # Set xlim to accommodate text labels
+        max_val = max(values)
+        ax.set_xlim(0, max_val * 1.15)
+        
+        # Add value labels with dark color
         for i, (bar, value) in enumerate(zip(bars, values)):
             ax.text(value, bar.get_y() + bar.get_height()/2.,
-                   f' {value:.4f}',
-                   va='center', fontsize=9)
+                   f'  {value:.4f}',
+                   va='center', fontsize=9, fontweight='bold', color='black')
     
     plt.tight_layout()
     output_path = Path(output_dir) / "03_model_rankings.png"
-    plt.savefig(output_path, dpi=300, bbox_inches='tight')
+    plt.savefig(output_path, dpi=300, bbox_inches='tight', facecolor='white', edgecolor='none')
     print(f"✓ Saved model rankings to {output_path}")
     plt.close()
 
