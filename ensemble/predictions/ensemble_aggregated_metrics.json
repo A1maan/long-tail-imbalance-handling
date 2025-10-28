@@ -1,0 +1,8 @@
+{
+  "head_classes_AP": 0.4602713227704025,
+  "medium_classes_AP": 0.4337626605094826,
+  "tail_classes_AP": 0.4375752762068796,
+  "num_head": 14,
+  "num_medium": 53,
+  "num_tail": 11
+}

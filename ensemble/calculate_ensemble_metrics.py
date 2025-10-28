@@ -84,6 +84,9 @@ class EnsembleMetricsCalculator:
         Ensemble format: [{"image_id", "image_name", "width", "height", "detections": [{"bbox": [x,y,w,h], "score", "category_id"}]}, ...]
         COCO format: [{"image_id", "category_id", "bbox": [x,y,w,h], "score"}, ...]
         
+        NOTE: If ensemble predictions use YOLO indices (0-79) instead of COCO category IDs (1-90),
+              they will be converted using self.yolo_to_coco_id mapping.
+        
         Args:
             ensemble_predictions: List of ensemble predictions
             
@@ -97,10 +100,17 @@ class EnsembleMetricsCalculator:
             
             for det in image_pred['detections']:
                 bbox = det['bbox']  # [x, y, w, h] in COCO format
+                category_id = int(det['category_id'])
+                
+                # Check if category_id needs mapping from YOLO index to COCO ID
+                # YOLO indices are 0-79, COCO category IDs start at 1
+                if category_id in self.yolo_to_coco_id:
+                    # Assume it's a YOLO index, map it to COCO category ID
+                    category_id = self.yolo_to_coco_id[category_id]
                 
                 coco_format.append({
                     "image_id": int(image_id),
-                    "category_id": int(det['category_id']),
+                    "category_id": int(category_id),
                     "bbox": bbox,
                     "score": float(det['score'])
                 })

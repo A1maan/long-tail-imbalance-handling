@@ -1,0 +1,25 @@
+{
+  "model": "Ensemble (Weighted Boxes Fusion)",
+  "overall": {
+    "model_name": "Ensemble",
+    "mAP@[0.5:0.95]": 0.43214964093164926,
+    "mAP@0.5": 0.5600693509506671,
+    "mAP@0.75": 0.47828159192198944,
+    "precision": 0.2181422873944143,
+    "recall": 0.5345306831805224
+  },
+  "class_frequency": {
+    "head": {
+      "AP": 0.4602713227704025,
+      "count": 14
+    },
+    "medium": {
+      "AP": 0.4337626605094826,
+      "count": 53
+    },
+    "tail": {
+      "AP": 0.4375752762068796,
+      "count": 11
+    }
+  }
+}
